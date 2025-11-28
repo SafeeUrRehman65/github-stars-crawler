@@ -56,7 +56,6 @@ def fetch_repos_paginated(limit=100000):
 
         cursor = page_info["endCursor"]
 
-    print(f"Finished fetching {total_repos} repositories")
 
 def save_to_db(repos):
     conn = psycopg2.connect(
@@ -84,6 +83,5 @@ def save_to_db(repos):
 
 if __name__ == "__main__":
     repos = fetch_repos_paginated()
-    print(f"Fetched {len(repos)} repositories")
     save_to_db(repos)
     print("Saved to database!")
