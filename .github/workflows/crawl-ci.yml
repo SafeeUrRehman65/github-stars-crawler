@@ -84,7 +84,7 @@ jobs:
           psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c "\COPY repositories TO 'repos.csv' CSV HEADER"
 
       - name: Upload CSV artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: github-repos
           path: repos.csv
