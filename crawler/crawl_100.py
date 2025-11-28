@@ -2,9 +2,7 @@ import os
 import requests
 import psycopg2
 from psycopg2.extras import execute_values
-from dotenv import load_dotenv
 
-load_dotenv()
 
 GITHUB_API_URL = "https://api.github.com/graphql"
 TOKEN  = os.getenv("GITHUB_TOKEN")
