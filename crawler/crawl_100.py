@@ -7,7 +7,6 @@ from psycopg2.extras import execute_values
 GITHUB_API_URL = "https://api.github.com/graphql"
 TOKEN  = os.getenv("GITHUB_TOKEN")
 
-
 QUERY = """
 query($cursor: String) {
   search(query: "stars:>0", type: REPOSITORY, first: 100, after: $cursor) {
@@ -28,19 +27,36 @@ query($cursor: String) {
 }
 """
 
-def fetch_repos():
+def fetch_repos_paginated(limit=100000):
     headers = {"Authorization": f"Bearer {TOKEN}"}
-    variables = {"cursor": None}
+    cursor = None
+    total_repos = 0
 
-    response = requests.post(
-        GITHUB_API_URL,
-        json={"query": QUERY, "variables": variables},
-        headers=headers
-    )
+    while True:
+        variables = {"cursor": cursor}
+        response = requests.post(
+            GITHUB_API_URL,
+            json={"query": QUERY, "variables": variables},
+            headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
+        nodes = data["data"]["search"]["nodes"]
 
-    response.raise_for_status()
-    data = response.json()
-    return data["data"]["search"]["nodes"]
+        if not nodes:
+            break
+
+        save_to_db(nodes)
+        total_repos += len(nodes)
+        print(f"Saved {total_repos} repos so far...")
+
+        page_info = data["data"]["search"]["pageInfo"]
+        if not page_info["hasNextPage"] or total_repos >= limit:
+            break
+
+        cursor = page_info["endCursor"]
+
+    print(f"Finished fetching {total_repos} repositories")
 
 def save_to_db(repos):
     conn = psycopg2.connect(
@@ -67,7 +83,7 @@ def save_to_db(repos):
     conn.close()
 
 if __name__ == "__main__":
-    repos = fetch_repos()
+    repos = fetch_repos_paginated()
     print(f"Fetched {len(repos)} repositories")
     save_to_db(repos)
     print("Saved to database!")
