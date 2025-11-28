@@ -1,3 +1,27 @@
+name: Crawl CI - Task 1 (Postgres smoke)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: runner
+          POSTGRES_DB: crawlerdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
