@@ -1,0 +1,61 @@
+name: Crawl CI - Task 1 (Postgres smoke)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: runner
+          POSTGRES_PASSWORD: runner
+          POSTGRES_DB: crawlerdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres to be ready
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U runner && break || sleep 1
+          done
+
+      - name: Create DB schema (repositories table)
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: runner
+          PGPASSWORD: runner
+          PGDATABASE: crawlerdb
+        run: |
+          psql "host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER password=$PGPASSWORD" -c "
+          CREATE TABLE IF NOT EXISTS repositories (
+            id SERIAL PRIMARY KEY,
+            owner TEXT NOT NULL,
+            name TEXT NOT NULL,
+            stars INTEGER NOT NULL DEFAULT 0,
+            last_updated TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            UNIQUE(owner, name)
+          );"
